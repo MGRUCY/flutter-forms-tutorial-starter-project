@@ -10,6 +10,11 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  Priority _selectedPriority = Priority.low;
+  final _formGlobalKey = GlobalKey<FormState>();
+  String _title = '';
+  String _description = '';
+
   final List<Todo> todos = [
     const Todo(
         title: 'study flutter',
@@ -27,6 +32,7 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
+    // final TextEditingController _emailController = TextEditingController();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Todo List'),
@@ -40,6 +46,107 @@ class _HomeState extends State<Home> {
             Expanded(child: TodoList(todos: todos)),
 
             // form stuff below here
+            Form(
+                key: _formGlobalKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    TextFormField(
+                      maxLength: 20,
+                      decoration: const InputDecoration(
+                        label: Text('Todo title'),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Type something bud';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        _title = value!;
+                      },
+                    ),
+                    TextFormField(
+                      maxLength: 40,
+                      decoration: const InputDecoration(
+                        label: Text('Description'),
+                      ),
+                      validator: (value) {
+                        if (value == null ||
+                            value.isEmpty ||
+                            value.length < 5) {
+                          return 'Type a description at least 5 letters';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        _description = value!;
+                      },
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    DropdownButtonFormField(
+                      value: _selectedPriority,
+                      decoration: const InputDecoration(
+                        label: Text('Priority'),
+                      ),
+                      items: Priority.values.map((p) {
+                        return DropdownMenuItem(
+                          value: p,
+                          child: Text(p.title),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedPriority = value!;
+                        });
+                      },
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    FilledButton(
+                      onPressed: () {
+                        if (_formGlobalKey.currentState!.validate()) {
+                          _formGlobalKey.currentState!.save();
+
+                          setState(() {
+                            todos.add(Todo(
+                                title: _title,
+                                description: _description,
+                                priority: _selectedPriority));
+                          });
+
+                          _formGlobalKey.currentState!.reset();
+                          _selectedPriority = Priority.low;
+                        }
+                      },
+                      style: FilledButton.styleFrom(
+                          backgroundColor: Colors.grey[800],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5),
+                          )),
+                      child: const Text('Add'),
+                    ),
+                  ],
+                ),
+              ),
+
+            // TextField(
+            //   controller: _emailController,
+            //   keyboardType: TextInputType.emailAddress,
+            //   // obscureText: true,
+            //   decoration: const InputDecoration(label: Text('Email address')),
+            // ),
+            // const SizedBox(
+            //   height: 20,
+            // ),
+            // FilledButton(
+            //     onPressed: () {
+            //       print(_emailController.text.trim());
+            //     },
+            //     child: const Text('print the email'))
           ],
         ),
       ),

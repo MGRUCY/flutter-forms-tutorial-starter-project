@@ -45,9 +45,9 @@ class _MyAppState extends State<MyApp> {
       );
     });
 
-    FirebaseMessaging.instance.getToken().then((token) {
-      print("FCM Token: $token");
-    });
+    // FirebaseMessaging.instance.getToken().then((token) {
+    //   print("FCM Token: $token");
+    // });
 
   }
   @override
