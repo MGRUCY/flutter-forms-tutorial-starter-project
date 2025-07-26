@@ -47,7 +47,6 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    // final TextEditingController _emailController = TextEditingController();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Todo List'),
@@ -58,9 +57,13 @@ class _HomeState extends State<Home> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Expanded(child: TodoList(todos: todos)),
-
-            // form stuff below here
+            Expanded(child: TodoList(todos: todos,
+              onDismiss: (index) {
+                setState(() {
+              todos.removeAt(index);
+              });
+              saveTodos(todos);
+            },)),
             Form(
               key: _formGlobalKey,
               child: Column(
