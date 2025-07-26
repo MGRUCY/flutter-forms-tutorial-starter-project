@@ -45,12 +45,8 @@ class _MyAppState extends State<MyApp> {
         ),
       );
     });
-
-    // FirebaseMessaging.instance.getToken().then((token) {
-    //   print("FCM Token: $token");
-    // });
-
   }
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

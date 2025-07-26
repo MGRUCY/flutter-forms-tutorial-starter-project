@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_forms_files/models/todo.dart';
-import 'package:flutter_forms_files/todo_list.dart';
+import 'models/todo.dart';
+import 'todo_list.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'search_bar.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -12,6 +13,9 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  List<Todo> todos = [];
+  List<Todo> filteredTodos = [];
+
   Priority _selectedPriority = Priority.low;
   final _formGlobalKey = GlobalKey<FormState>();
   String _title = '';
@@ -34,15 +38,25 @@ class _HomeState extends State<Home> {
     setState(() {
       todos.clear();
       todos.addAll(loadedTodos);
+      filteredTodos = List.from(todos);
     });
   }
 
-  final List<Todo> todos = [];
-  
   @override
   void initState() {
     loadTodos();
     super.initState();
+  }
+
+  void searchChanged(String query) {
+    final filtered = todos.where((todo) {
+      final lowerQuery = query.toLowerCase();
+      return todo.title.toLowerCase().contains(lowerQuery);
+    }).toList();
+
+    setState(() {
+      filteredTodos = filtered;
+    });
   }
 
   @override
@@ -57,95 +71,101 @@ class _HomeState extends State<Home> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Expanded(child: TodoList(todos: todos,
-              onDismiss: (index) {
+            SearchBars(onChanged: searchChanged),
+            const SizedBox(height: 5),
+            Expanded(
+              child: TodoList(
+                todos: filteredTodos,
+                onDismiss: (index) {
+                 final removedTodo = filteredTodos[index];
                 setState(() {
-              todos.removeAt(index);
-              });
-              saveTodos(todos);
-            },)),
-            Form(
-              key: _formGlobalKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  TextFormField(
-                    maxLength: 20,
-                    decoration: const InputDecoration(
-                      label: Text('Todo title'),
+                  todos.remove(removedTodo);
+                  filteredTodos.removeAt(index);
+                });
+                saveTodos(todos);
+                },
+              ),
+            ),
+            const SizedBox(height: 5),
+            SingleChildScrollView(
+              child: Form(
+                key: _formGlobalKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    TextFormField(
+                      maxLength: 20,
+                      decoration: const InputDecoration(
+                        label: Text('Todo title'),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Type something bud';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => _title = value!,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Type something bud';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      _title = value!;
-                    },
-                  ),
-                  TextFormField(
-                    maxLength: 40,
-                    decoration: const InputDecoration(
-                      label: Text('Description'),
+                    TextFormField(
+                      maxLength: 40,
+                      decoration: const InputDecoration(
+                        label: Text('Description'),
+                      ),
+                      validator: (value) {
+                        if (value == null ||
+                            value.isEmpty ||
+                            value.length < 5) {
+                          return 'Type a description at least 5 letters';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => _description = value!,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty || value.length < 5) {
-                        return 'Type a description at least 5 letters';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      _description = value!;
-                    },
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  DropdownButtonFormField(
-                    value: _selectedPriority,
-                    decoration: const InputDecoration(
-                      label: Text('Priority'),
-                    ),
-                    items: Priority.values.map((p) {
-                      return DropdownMenuItem(
-                        value: p,
-                        child: Text(p.title),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedPriority = value!;
-                      });
-                    },
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  FilledButton(
-                    onPressed: () {
-                      if (_formGlobalKey.currentState!.validate()) {
-                        _formGlobalKey.currentState!.save();
-
+                    const SizedBox(height: 5),
+                    DropdownButtonFormField(
+                      value: _selectedPriority,
+                      decoration: const InputDecoration(
+                        label: Text('Priority'),
+                      ),
+                      items: Priority.values.map((p) {
+                        return DropdownMenuItem(
+                          value: p,
+                          child: Text(p.title),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
                         setState(() {
-                          todos.add(Todo(
+                          _selectedPriority = value!;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 5),
+                    FilledButton(
+                      onPressed: () {
+                        if (_formGlobalKey.currentState!.validate()) {
+                          _formGlobalKey.currentState!.save();
+                          setState(() {
+                            todos.add(Todo(
                               title: _title,
                               description: _description,
-                              priority: _selectedPriority));
-                        });
-                        saveTodos(todos);
-                        _formGlobalKey.currentState!.reset();
-                        _selectedPriority = Priority.low;
-                      }
-                    },
-                    style: FilledButton.styleFrom(
+                              priority: _selectedPriority,
+                            ));
+                          });
+                          saveTodos(todos);
+                          _formGlobalKey.currentState!.reset();
+                          _selectedPriority = Priority.low;
+                        }
+                      },
+                      style: FilledButton.styleFrom(
                         backgroundColor: Colors.grey[800],
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(5),
-                        )),
-                    child: const Text('Add'),
-                  ),
-                ],
+                        ),
+                      ),
+                      child: const Text('Add'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
